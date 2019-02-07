@@ -41,7 +41,7 @@ class DQNAgent(QAgent):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self._update_target_net()
+        self._update_target_net(self.q_pred_net, self.q_target_net)
         
     def save(self, save_dir='.'):
         torch.save(self.q_pred_net.state_dict(), os.path.join(save_dir, 'nav_agent_checkpoint.pth'))
@@ -49,11 +49,6 @@ class DQNAgent(QAgent):
     def load(self, load_dir='.'):
         chkpt = torch.load(os.path.join(load_dir, 'nav_agent_checkpoint.pth'))
         self.q_pred_net.load_state_dict(chkpt)
-        
-    def _update_target_net(self):
-        for target_net_param, pred_net_param in zip(self.q_target_net.parameters(), self.q_pred_net.parameters()):
-            target_net_param.data.copy_(self.tau * pred_net_param.data + 
-                                        (1.0-self.tau) * target_net_param.data)
             
     def predict(self, state, epsilon=0.):
         self.q_pred_net.eval()

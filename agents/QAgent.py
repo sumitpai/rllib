@@ -9,6 +9,7 @@ from ..utils import ReplayMemory
 
 class QAgent(abc.ABC):
     def __init__(self, agent_name, state_features, action_size, model_class_dict, agent_params, rnd=-1):
+        self.seed = rnd
         if rnd!=-1:
             np.random.seed(rnd)
             random.seed(rnd)
@@ -65,8 +66,10 @@ class QAgent(abc.ABC):
     def load(self, load_dir='.'):
         raise NotImplementedError('Not implemented')
         
-    def _update_target_net(self):
-        raise NotImplementedError('Not implemented')
+    def _update_target_net(self, q_pred_net, q_target_net):
+        for target_net_param, pred_net_param in zip(q_target_net.parameters(), q_pred_net.parameters()):
+            target_net_param.data.copy_(self.tau * pred_net_param.data + 
+                                        (1.0-self.tau) * target_net_param.data)
         
     def predict(self, state, exploration_params):
         raise NotImplementedError('Not implemented')
