@@ -8,8 +8,9 @@ import torch.optim as optim
 from ..utils import ReplayMemory
 
 class QAgent(abc.ABC):
-    def __init__(self, agent_name, state_features, action_size, model_class_dict, agent_params, rnd=-1):
+    def __init__(self, agent_name, state_features, action_size, model_class_dict, agent_params, rnd=-1, index=-1):
         self.seed = rnd
+        self.agent_index = index
         if rnd!=-1:
             np.random.seed(rnd)
             random.seed(rnd)

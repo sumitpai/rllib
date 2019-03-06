@@ -8,11 +8,12 @@ import numpy as np
 import os
 
 class ActorCriticAgent(QAgent):
-    def __init__(self, state_features, action_size, model_class_dict={}, agent_params={}, rnd=-1):
-        super().__init__("Actor_Critic", state_features, action_size, model_class_dict, agent_params, rnd)
+    def __init__(self, state_features, action_size, model_class_dict={}, agent_params={}, rnd=-1, index = -1):
+        super().__init__("Actor_Critic", state_features, action_size, model_class_dict, agent_params, rnd, index)
         
     def _initialize_models(self):
         self.n_agents = self.agent_params['n_agents']
+        
         
         self.q_actor_pred_net = self.model_class_dict["model_class"](self.state_features, 
                                                                       self.action_size, 
@@ -36,10 +37,10 @@ class ActorCriticAgent(QAgent):
 
         
         self.optimizer_actor = optim.Adam(self.q_actor_pred_net.parameters(), 
-                                    lr=self.agent_params.get('lr', 0.001))
+                                    lr=self.agent_params.get('actor_lr', 0.001))
         
         self.optimizer_critic = optim.Adam(self.q_critic_pred_net.parameters(), 
-                                    lr=self.agent_params.get('lr', 0.001))
+                                    lr=self.agent_params.get('critic_lr', 0.001))
         
         self.noise = OUNoise((self.n_agents, self.action_size), self.seed)
 
@@ -100,12 +101,25 @@ class ActorCriticAgent(QAgent):
         self._update_target_net(self.q_critic_pred_net, self.q_critic_target_net)
             
     def save(self, save_dir="."):
-        torch.save(self.q_actor_pred_net.state_dict(), os.path.join(save_dir, 'actor_checkpoint.pth'))
-        torch.save(self.q_critic_pred_net.state_dict(), os.path.join(save_dir, 'critic_checkpoint.pth'))
+        actor_chkpt_name = 'actor_checkpoint.pth'
+        critic_chkpt_name = 'critic_checkpoint.pth'
+        if self.agent_index != -1:
+            actor_chkpt_name = 'actor_' + str(self.agent_index) + '_checkpoint.pth'
+            critic_chkpt_name = 'critic_' + str(self.agent_index) + '_checkpoint.pth'
+        
+            
+        torch.save(self.q_actor_pred_net.state_dict(), os.path.join(save_dir, actor_chkpt_name))
+        torch.save(self.q_critic_pred_net.state_dict(), os.path.join(save_dir, critic_chkpt_name))
     
     def load(self, load_dir="."):
-        actor_checkpoint = torch.load(os.path.join(load_dir, 'actor_checkpoint.pth'))
-        critic_checkpoint = torch.load(os.path.join(load_dir, 'critic_checkpoint.pth'))
+        actor_chkpt_name = 'actor_checkpoint.pth'
+        critic_chkpt_name = 'critic_checkpoint.pth'
+        if self.agent_index != -1:
+            actor_chkpt_name = 'actor_' + str(self.agent_index) + '_checkpoint.pth'
+            critic_chkpt_name = 'critic_' + str(self.agent_index) + '_checkpoint.pth'
+            
+        actor_checkpoint = torch.load(os.path.join(load_dir, actor_chkpt_name))
+        critic_checkpoint = torch.load(os.path.join(load_dir, critic_chkpt_name))
         self.q_actor_pred_net.load_state_dict(actor_checkpoint)
         self.q_critic_pred_net.load_state_dict(critic_checkpoint)
         
@@ -123,6 +137,6 @@ class ActorCriticAgent(QAgent):
         if np.random.rand() > epsilon:
             return np.clip(actions, -1, 1)   
         else:
-            return np.float32(np.random.rand(self.n_agents, self.action_size) - 0.5) * 2.0
+            return np.squeeze(np.float32(np.random.rand(self.n_agents, self.action_size) - 0.5) * 2.0)
     
     
